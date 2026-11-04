@@ -27,6 +27,8 @@ export async function audit(
   );
 }
 export async function current(db: DB, session: string): Promise<Actor> {
+  if (session.startsWith("pilot-") && process.env.AUTH_MODE !== "pilot")
+    throw new AppError("Inicie sesión", 401);
   const r = await db.query(
     "SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.digest=$1 AND s.expires_at>now() AND u.active",
     [digest(session)],

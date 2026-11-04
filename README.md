@@ -120,3 +120,14 @@ Las pruebas de integración usan PostgreSQL embebido PGlite y validan roles, rev
 - Los registros manuales dependen del código ingresado correctamente.
 - Listado de reportes completo por evento: incorporar paginación para eventos masivos.
 - La interfaz gestiona lectores; el administrador global se inicializa por migración.
+
+## Piloto sin correo
+
+Configure `AUTH_MODE=pilot` y `DELIVERY_EMAIL_ENABLED=false` en el Worker. Aplique la migración 002. Para emitir invitaciones desde el equipo administrador prepare .env.production.local con DATABASE_URL, APP_BASE_URL (origen HTTPS del Worker) y AUTH_MODE=pilot.
+
+```bash
+node --env-file=.env.production.local --import tsx scripts/migrate.ts
+node --env-file=.env.production.local --import tsx scripts/invite.ts ptorresp@ups.edu.ec
+```
+
+Abra su enlace e ingrese su correo. Cree el evento y asigne a cada lector. Repita el comando invite.ts con cada correo y comparta el enlace de salida en privado. Cada enlace funciona una vez durante 24 horas y abre una sesión de ocho horas. Generar otro reemplaza el enlace pendiente. En desarrollo use .env.local y el origen local. Para volver a OTP configure primero Resend y OTP_HMAC_SECRET, luego AUTH_MODE=otp; las sesiones piloto dejan de ser válidas. El envío de comprobantes se activa por separado.

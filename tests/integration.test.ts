@@ -137,5 +137,22 @@ test("integración PostgreSQL: roles, duplicados, anulaciones, QR y OTP", async 
     await verifyOtp(db, { email: actor.email, code: "123456" }),
     null,
   );
+  await pg.exec(readFileSync("migrations/002_pilot.sql", "utf8"));
+  const { issueInvite, redeemInvite } =
+    await import("../src/application/pilot");
+  process.env.AUTH_MODE = "pilot";
+  const invite = await issueInvite(db, actor.email);
+  assert.equal(await redeemInvite(db, { email: reader.email, invite }), null);
+  assert.ok(await redeemInvite(db, { email: actor.email, invite }));
+  assert.equal(await redeemInvite(db, { email: actor.email, invite }), null);
+  await assert.rejects(() => issueInvite(db, reader.email));
+  process.env.AUTH_MODE = "otp";
+  assert.equal(
+    await redeemInvite(db, {
+      email: actor.email,
+      invite: await issueInvite(db, actor.email),
+    }),
+    null,
+  );
   await pg.close();
 });

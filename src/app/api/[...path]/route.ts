@@ -1,3 +1,4 @@
+import { pilotEnabled, redeemInvite } from "@/application/pilot";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { transaction } from "@/infrastructure/db";
@@ -29,6 +30,8 @@ async function handle(req: NextRequest) {
         throw new AppError("Solicitud demasiado grande", 413);
       const body = JSON.parse(raw);
       if (path === "auth/request") {
+        if (pilotEnabled())
+          return json({ error: "Utilice su enlace de invitación" }, 403);
         await transaction((db) =>
           requestOtp(
             db,
@@ -40,9 +43,21 @@ async function handle(req: NextRequest) {
           message: "Si su correo está autorizado, recibirá un código.",
         });
       }
-      if (path === "auth/verify") {
-        const s = await transaction((db) => verifyOtp(db, body));
-        if (!s) return json({ error: "Código inválido o vencido" }, 400);
+      if (path === "auth/verify" || path === "auth/pilot") {
+        if ((path === "auth/pilot") !== pilotEnabled())
+          return json({ error: "Método de acceso deshabilitado" }, 403);
+        const s = await transaction((db) =>
+          pilotEnabled() ? redeemInvite(db, body) : verifyOtp(db, body),
+        );
+        if (!s)
+          return json(
+            {
+              error: pilotEnabled()
+                ? "Enlace inválido, vencido o ya utilizado"
+                : "Código inválido o vencido",
+            },
+            400,
+          );
         const res = json({ ok: true });
         res.cookies.set("session", s, {
           httpOnly: true,
@@ -74,7 +89,10 @@ async function handle(req: NextRequest) {
         ),
       );
     }
+    if (path === "auth/mode") return json({ pilot: pilotEnabled() });
     if (path === "jobs/mail") {
+      if (process.env.DELIVERY_EMAIL_ENABLED !== "true")
+        return json({ processed: 0 });
       if (
         !process.env.CRON_SECRET ||
         req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`

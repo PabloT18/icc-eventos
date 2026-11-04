@@ -49,6 +49,8 @@ export default function Home() {
     [readers, setReaders] = useState<Row[]>([]),
     [scans, setScans] = useState<Row[]>([]),
     [filter, setFilter] = useState("");
+  const [pilot, setPilot] = useState<boolean | null>(null);
+  const [invite, setInvite] = useState("");
   const isAdmin = user?.global_role === "ADMIN";
   const refresh = async () => {
     const es = await api("events");
@@ -69,6 +71,14 @@ export default function Home() {
     }
   };
   useEffect(() => {
+    const key = new URLSearchParams(location.hash.slice(1)).get("invite");
+    if (key) {
+      setInvite(key);
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+    api("auth/mode")
+      .then((m) => setPilot(m.pilot))
+      .catch(() => setMessage("No se pudo consultar el modo de acceso"));
     api("me")
       .then((u) => {
         setUser(u);
@@ -136,12 +146,21 @@ export default function Home() {
             <span className="eyebrow">Acceso autorizado</span>
             <h1>Gestión de entregas</h1>
             <p className="muted">
-              Ingrese con su correo institucional y el código de un solo uso.
+              {pilot
+                ? "Abra su enlace personal e ingrese el correo registrado."
+                : "Ingrese con su correo institucional y el código de un solo uso."}
             </p>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 run(async () => {
+                  if (pilot) {
+                    await api("auth/pilot", { email, invite });
+                    setInvite("");
+                    setUser(await api("me"));
+                    await refresh();
+                    return;
+                  }
                   await api("auth/request", { email });
                   setSent(true);
                   setMessage(
@@ -161,7 +180,9 @@ export default function Home() {
                   setSent(false);
                 }}
               />
-              <button disabled={busy}>Enviar código</button>
+              <button disabled={busy || pilot === null || (pilot && !invite)}>
+                {pilot ? "Ingresar con invitación" : "Enviar código"}
+              </button>
             </form>
             {sent && (
               <form
