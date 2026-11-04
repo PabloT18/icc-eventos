@@ -1,0 +1,15 @@
+name: Procesar comprobantes
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+jobs:
+  send:
+    if: vars.APP_BASE_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Procesar lote pendiente
+        env:
+          APP_BASE_URL: ${{ vars.APP_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: curl --fail --silent --show-error --max-time 100 -H "Authorization:Bearer $CRON_SECRET" "$APP_BASE_URL/api/jobs/mail"
