@@ -48,27 +48,23 @@ El adaptador de correo inicial utiliza Resend por HTTPS, no SMTP. Requiere remit
 
 Asignar un correo desde el evento crea el usuario. El formulario también permite cambiar rol o revocar acceso. La API verifica permisos en cada operación. Los motivos del servicio QR son visibles exclusivamente en el reporte de lecturas del administrador. Una entrega manual no certifica elegibilidad y requiere código, nombre, correo y observación.
 
-## Contrato provisional QR
+## Contrato del validador QR ACA
 
-POST al endpoint configurado con `Authorization: Bearer ...` y JSON:
+El servidor realiza una petición `GET` a `QR_VALIDATOR_URL`, añade el texto completo leído del QR como parámetro `qr` y envía `Authorization: Bearer ${QR_VALIDATOR_TOKEN}` y `Accept: application/json`. URL recomendada:
 
-```json
-{"qr_content":"contenido leído","timestamp":"2026-11-04T15:30:00Z"}
+```text
+https://mob.ups.edu.ec/aca/api/v1/qweb/datosCarnetQr?qr=<contenido codificado>
 ```
 
-Respuesta válida:
+Respuesta válida esperada:
 
 ```json
-{"valid":true,"student":{"code":"CODIGO-ESTABLE","name":"Nombre completo","email":"estudiante@est.ups.edu.ec"}}
+{"nombres":"PABLO ANDRES","apellidos":"TORRES PEÑA","email":"ptorresp@ups.edu.ec","type":"colaborador"}
 ```
 
-Respuesta inválida:
+La aplicación guarda el nombre concatenado, correo y tipo. ACA no devuelve un código en este contrato, por lo que el correo institucional normalizado se utiliza como identificador estable para prevenir entregas duplicadas. HTTP 400 significa QR inválido/vencido; la razón concreta no se expone al lector. Otros errores HTTP o respuestas con formato inesperado se tratan como indisponibilidad del servicio.
 
-```json
-{"valid":false,"reason":"Motivo interno"}
-```
-
-El contrato real se adapta exclusivamente en `src/infrastructure/qr.ts`. El nombre no basta para impedir duplicados: `code` es obligatorio. El token no debe incluirse en variables NEXT_PUBLIC. No se abre ni consulta la URL contenida en un QR.
+El contrato se adapta exclusivamente en `src/infrastructure/qr.ts`. Configurar `QR_VALIDATOR_URL=https://mob.ups.edu.ec/aca/api/v1/qweb/datosCarnetQr` y `QR_VALIDATOR_TOKEN` como secretos locales/Cloudflare. No usar localhost en Cloudflare ni exponer el token al navegador. La URL contenida en el QR se envía como dato al endpoint; la aplicación no la abre.
 
 Una validación dura tres minutos y pertenece al lector y evento. La identidad confirmada sale de DB, no del cliente. La entrega se registra en transacción junto con auditoría y correo pendiente. El índice único parcial impide dos entregas confirmadas por evento y estudiante. Anular conserva el historial y permite una nueva entrega. Las fechas se almacenan en timestamptz y se muestran en America/Guayaquil.
 
