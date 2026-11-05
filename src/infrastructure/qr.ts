@@ -54,9 +54,26 @@ export async function validateQr(content: string) {
       cache: "no-store",
     });
   } catch (error) {
-    // Never log the URL, QR content, authorization header, or exception message.
+    // Log transport metadata only. Error messages can contain the QR query.
+    const failure = error as {
+      name?: unknown;
+      cause?: { name?: unknown; code?: unknown };
+    };
+    const causeCode =
+      typeof failure?.cause?.code === "string" &&
+      /^[A-Z0-9_]{1,40}$/.test(failure.cause.code)
+        ? failure.cause.code
+        : undefined;
     console.error("QR validator network failure", {
-      errorType: error instanceof Error ? error.name : "UnknownError",
+      host: url.hostname,
+      errorType:
+        typeof failure?.name === "string" ? failure.name : "UnknownError",
+      causeType:
+        typeof failure?.cause?.name === "string"
+          ? failure.cause.name
+          : undefined,
+      causeCode,
+      timeoutMs: 15000,
     });
     throw new Error("No fue posible conectar con el validador QR");
   }
