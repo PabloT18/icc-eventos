@@ -168,7 +168,7 @@ async function handle(req: NextRequest) {
         await access(db, a, z.uuid().parse(event));
         const rows = (
           await db.query(
-            `SELECT d.id,d.student_code,d.student_name,d.student_email,u.email AS responsible,d.method,d.observation,d.status,d.delivered_at,d.cancellation_reason,d.cancelled_at,o.sent_at AS email_sent_at,o.attempts AS email_attempts FROM deliveries d JOIN users u ON u.id=d.actor_id LEFT JOIN email_outbox o ON o.delivery_id=d.id WHERE d.event_id=$1 ORDER BY d.delivered_at DESC`,
+            `SELECT d.id,d.student_code,d.student_name,d.student_email,d.student_type,u.email AS responsible,d.method,d.observation,d.status,d.delivered_at,d.cancellation_reason,d.cancelled_at,o.sent_at AS email_sent_at,o.attempts AS email_attempts FROM deliveries d JOIN users u ON u.id=d.actor_id LEFT JOIN email_outbox o ON o.delivery_id=d.id WHERE d.event_id=$1 ORDER BY d.delivered_at DESC`,
             [event],
           )
         ).rows;
@@ -178,6 +178,7 @@ async function handle(req: NextRequest) {
           "student_code",
           "student_name",
           "student_email",
+          "student_type",
           "responsible",
           "method",
           "observation",
