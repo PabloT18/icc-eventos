@@ -13,6 +13,7 @@ import type { DB } from "../src/infrastructure/db";
 test("integración PostgreSQL: roles, duplicados, anulaciones, QR y OTP", async () => {
   const pg = new PGlite();
   await pg.exec(readFileSync("migrations/001_initial.sql", "utf8"));
+  await pg.exec(readFileSync("migrations/003_delivery_student_type.sql", "utf8"));
   const db = {
     query: async (q: string, p?: unknown[]) => {
       const r = await pg.query(q, p);
@@ -44,6 +45,7 @@ test("integración PostgreSQL: roles, duplicados, anulaciones, QR y OTP", async 
       code: "S01",
       name: "Estudiante Prueba",
       email: "student@example.com",
+      type: "estudiante",
     },
     observation: "Identidad verificada",
   };
