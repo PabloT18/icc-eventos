@@ -258,12 +258,13 @@ export async function execute(
     }
     const s = student!;
     const r = await db.query(
-      "INSERT INTO deliveries(event_id,student_code,student_name,student_email,actor_id,method,observation,validation_id,request_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id,delivered_at",
+      "INSERT INTO deliveries(event_id,student_code,student_name,student_email,student_type,actor_id,method,observation,validation_id,request_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id,delivered_at",
       [
         v.event_id,
         s.code,
         s.name,
         s.email,
+        s.type,
         a.id,
         v.method,
         v.observation,
