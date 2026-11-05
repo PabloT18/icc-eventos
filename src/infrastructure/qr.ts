@@ -30,28 +30,64 @@ export async function validateQr(content: string) {
 
   const endpoint = process.env.QR_VALIDATOR_URL;
   const token = process.env.QR_VALIDATOR_TOKEN;
-  if (!endpoint || !endpoint.startsWith("https://") || !token)
+  if (!endpoint || !endpoint.startsWith("https://") || !token) {
+    console.error("QR validator configuration error", {
+      hasUrl: Boolean(endpoint),
+      urlIsHttps: Boolean(endpoint?.startsWith("https://")),
+      hasToken: Boolean(token),
+    });
     throw new Error("Validador QR no configurado");
+  }
 
   const url = new URL(endpoint);
   url.searchParams.set("qr", content);
-  const result = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    },
-    signal: AbortSignal.timeout(15000),
-    redirect: "error",
-    cache: "no-store",
-  });
+  let result: Response;
+  try {
+    result = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+      signal: AbortSignal.timeout(15000),
+      redirect: "error",
+      cache: "no-store",
+    });
+  } catch (error) {
+    // Never log the URL, QR content, authorization header, or exception message.
+    console.error("QR validator network failure", {
+      errorType: error instanceof Error ? error.name : "UnknownError",
+    });
+    throw new Error("No fue posible conectar con el validador QR");
+  }
 
   // El servicio ACA usa HTTP 400 para un QR inválido o vencido.
   if (result.status === 400)
     return { valid: false as const, reason: "QR inválido o vencido" };
-  if (!result.ok) throw new Error("Servicio QR no disponible");
+  if (!result.ok) {
+    console.error("QR validator HTTP failure", { status: result.status });
+    throw new Error("El validador QR respondió con error HTTP");
+  }
 
-  const data = validatorResponse.parse(await result.json());
+  let payload: unknown;
+  try {
+    payload = await result.json();
+  } catch (error) {
+    console.error("QR validator invalid JSON", {
+      errorType: error instanceof Error ? error.name : "UnknownError",
+    });
+    throw new Error("El validador QR devolvió JSON inválido");
+  }
+
+  const parsed = validatorResponse.safeParse(payload);
+  if (!parsed.success) {
+    console.error("QR validator response contract mismatch", {
+      issues: parsed.error.issues.map(({ code, path }) => ({ code, path })),
+    });
+    throw new Error("La respuesta del validador QR no cumple el contrato");
+  }
+
+  const data = parsed.data;
   const email = data.email.toLowerCase();
   return {
     valid: true as const,
