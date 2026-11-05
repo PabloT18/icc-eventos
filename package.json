@@ -1,7 +1,7 @@
 {
   "name": "icc-eventos",
-  "version": "1.0.0",
-  "description": "Gesti\u00f3n de eventos y entregas mediante carn\u00e9 institucional UPS",
+  "version": "1.0.1",
+  "description": "Gestión de eventos y entregas mediante carné institucional UPS",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

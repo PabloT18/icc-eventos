@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback, type FormEvent } from "react";
 import dynamic from "next/dynamic";
 const Scanner = dynamic(() => import("@/components/Scanner"), { ssr: false });
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "local";
+const BUILD_COMMIT = process.env.NEXT_PUBLIC_BUILD_COMMIT ?? "dev";
 type Event = {
   id: string;
   name: string;
@@ -85,7 +87,7 @@ export default function Home() {
         return api("events");
       })
       .then(setEvents)
-      .catch(() => {});
+      .catch(() => { });
   }, []);
   const onRead = useCallback(
     (text: string) => {
@@ -647,7 +649,8 @@ export default function Home() {
           </>
         )}
         <p className="muted">
-          Campus Eventos · Horario de Ecuador · Acceso restringido
+          Campus Eventos · v{APP_VERSION} · {BUILD_COMMIT} · Horario de Ecuador ·
+          Acceso restringido
         </p>
       </main>
     </>

@@ -18,14 +18,14 @@ export async function validateQr(content: string) {
   if (process.env.QR_MODE === "mock" && process.env.NODE_ENV === "development")
     return content === "DEMO-VALID"
       ? {
-          valid: true as const,
-          student: {
-            code: "demo@example.com",
-            name: "Estudiante de demostración",
-            email: "demo@example.com",
-            type: "estudiante",
-          },
-        }
+        valid: true as const,
+        student: {
+          code: "demo@example.com",
+          name: "Estudiante de demostración",
+          email: "demo@example.com",
+          type: "estudiante",
+        },
+      }
       : { valid: false as const, reason: "QR de demostración inválido" };
 
   const endpoint = process.env.QR_VALIDATOR_URL;
@@ -61,7 +61,7 @@ export async function validateQr(content: string) {
     };
     const causeCode =
       typeof failure?.cause?.code === "string" &&
-      /^[A-Z0-9_]{1,40}$/.test(failure.cause.code)
+        /^[A-Z0-9_]{1,40}$/.test(failure.cause.code)
         ? failure.cause.code
         : undefined;
     console.error("QR validator network failure", {
@@ -74,6 +74,11 @@ export async function validateQr(content: string) {
           : undefined,
       causeCode,
       timeoutMs: 15000,
+    });
+    console.error("QR validator network failure. Message 2", {
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? error.cause : undefined,
     });
     throw new Error("No fue posible conectar con el validador QR");
   }
