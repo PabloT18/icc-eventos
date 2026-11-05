@@ -50,11 +50,12 @@ export async function validateQr(content: string) {
         Accept: "application/json",
       },
       signal: AbortSignal.timeout(15000),
-      redirect: "error",
+      redirect: "manual",
       cache: "no-store",
     });
   } catch (error) {
-    // Log transport metadata only. Error messages can contain the QR query.
+    // Conserva aquí el diagnóstico de red que ya tienes.
+    // No registres error.cause ni el mensaje sin filtrar: podrían incluir el QR.
     const failure = error as {
       name?: unknown;
       cause?: { name?: unknown; code?: unknown };
@@ -73,14 +74,26 @@ export async function validateQr(content: string) {
           ? failure.cause.name
           : undefined,
       causeCode,
-      timeoutMs: 15000,
     });
-    console.error("QR validator network failure. Message 2", {
-      errorName: error instanceof Error ? error.name : typeof error,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      cause: error instanceof Error ? error.cause : undefined,
-    });
+
     throw new Error("No fue posible conectar con el validador QR");
+  }
+
+  if (result.status >= 300 && result.status < 400) {
+    const location = result.headers.get("location");
+    let locationHost: string | undefined;
+
+    try {
+      locationHost = location ? new URL(location, url).hostname : undefined;
+    } catch {
+      locationHost = undefined;
+    }
+
+    console.error("QR validator redirect rejected", {
+      status: result.status,
+      locationHost,
+    });
+    throw new Error("El validador QR respondió con una redirección");
   }
 
   // El servicio ACA usa HTTP 400 para un QR inválido o vencido.
