@@ -2,6 +2,7 @@ node_modules/
 .next/
 .open-next/
 .wrangler/
+.vercel/
 .env*
 !.env.example
 .dev.vars*
