@@ -2,9 +2,24 @@
   "name": "icc-eventos",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-01-01",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
-  "services": [
-    { "binding": "WORKER_SELF_REFERENCE", "service": "icc-eventos" },
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
   ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "icc-eventos"
+    },
+  ],
+  "vars": {
+    "APP_BASE_URL": "https://icc-eventos.pabloa-ec.workers.dev",
+    "AUTH_MODE": "pilot",
+    "DELIVERY_EMAIL_ENABLED": "false",
+    "QR_MODE": "remote"
+  }
 }
