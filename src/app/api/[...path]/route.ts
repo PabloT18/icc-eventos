@@ -15,6 +15,8 @@ import {
 } from "@/application/service";
 import { csvCell } from "@/domain/policy";
 export const dynamic = "force-dynamic";
+// ACA puede tardar hasta 15 s; deja margen para DB y respuesta HTTP en Vercel.
+export const maxDuration = 30;
 const json = (v: unknown, status = 200) =>
   NextResponse.json(v, { status, headers: { "Cache-Control": "no-store" } });
 async function handle(req: NextRequest) {

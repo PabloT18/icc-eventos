@@ -1,5 +1,17 @@
 import type { NextConfig } from "next";
+import packageJson from "./package.json";
+
+const version = process.env.NEXT_PUBLIC_APP_VERSION ?? packageJson.version;
+const commit =
+  process.env.NEXT_PUBLIC_BUILD_COMMIT ??
+  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ??
+  "local";
+
 const config: NextConfig = {
+  env: {
+    NEXT_PUBLIC_APP_VERSION: version,
+    NEXT_PUBLIC_BUILD_COMMIT: commit,
+  },
   async headers() {
     return [
       {

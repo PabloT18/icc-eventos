@@ -89,6 +89,73 @@ npm run deploy
 
 No ejecutar migraciones automáticamente durante cada build. Aplicar `db:migrate` con la URL de la base correspondiente antes del primer despliegue. Las migraciones llevan registro y bloqueo transaccional. Configurar backups y comprobar restauración antes de uso operativo.
 
+## Despliegue alternativo en Vercel
+
+Vercel ejecuta la aplicación Next.js de forma nativa. Este despliegue es independiente de Cloudflare: no cambia `wrangler.jsonc`, los secretos ni el Worker existente. Ambas instalaciones pueden apuntar al mismo Neon, por lo que comparten eventos, usuarios y entregas. En Vercel configurar exactamente el `DATABASE_URL` de producción que ya usa Cloudflare.
+
+### Desde el dashboard
+
+1. En Vercel, crea un proyecto e importa `PabloT18/icc-eventos` desde GitHub. Usa `main` como rama de producción y el framework detectado **Next.js**. Los comandos predeterminados `npm run build` y `npm ci` sirven para este proyecto.
+2. Elige un nombre de proyecto antes del primer despliegue, por ejemplo `icc-eventos-ups`. La URL estable será `https://<nombre>.vercel.app`.
+3. En **Settings → Environment Variables**, crea las variables para **Production**:
+
+   | Variable | Valor |
+   |---|---|
+   | `APP_BASE_URL` | URL HTTPS estable del proyecto Vercel, sin `/` final |
+   | `DATABASE_URL` | Misma URL pooled de Neon que usa el Worker de producción |
+   | `OTP_HMAC_SECRET` | Secreto aleatorio de al menos 32 caracteres |
+   | `AUTH_MODE` | `pilot` para enlaces de invitación |
+   | `QR_MODE` | `remote` |
+   | `QR_VALIDATOR_URL` | `https://mob.ups.edu.ec/aca/api/v1/qweb/datosCarnetQr` |
+   | `QR_VALIDATOR_TOKEN` | Bearer token ACA vigente |
+   | `DELIVERY_EMAIL_ENABLED` | `false` mientras los comprobantes no estén configurados |
+   | `MAIL_MODE` | `remote` |
+   | `CRON_SECRET` | Secreto aleatorio; solo necesario si se habilita el job de correo |
+   | `MAIL_API_KEY`, `MAIL_FROM` | Solo si se activa el envío de correo |
+
+   No uses `NEXT_PUBLIC_` para secretos. No cambies ni borres variables del Worker de Cloudflare.
+4. Despliega el proyecto. Vercel debe publicar `https://<nombre>.vercel.app`. Las variables nuevas o editadas se aplican al siguiente despliegue.
+5. Prueba login por invitación, carga de eventos, lectura manual de un QR, registro y reporte. La API valida que `Origin` coincida exactamente con `APP_BASE_URL`; las URL de Preview no aceptarán operaciones POST mientras esa variable apunte al dominio estable. Haz la prueba funcional en el dominio estable. Revisa los logs de la función `/api/[...path]` desde el panel de Vercel si falla.
+6. Genera enlaces de invitación nuevos con `APP_BASE_URL` apuntando al dominio Vercel. No compartas los enlaces de Cloudflare para esta prueba.
+
+La ruta API declara un máximo de ejecución de 30 segundos para dejar margen a la consulta ACA de hasta 15 segundos y a la persistencia. Un cambio de hosting puede cambiar la IP/ruta de salida, pero no garantiza que ACA acepte la conexión desde Vercel; compruébalo con una validación real.
+
+### Desde la terminal
+
+Desde el repositorio actualizado en tu Mac:
+
+```bash
+npm ci
+npx vercel login
+npx vercel link
+```
+
+Selecciona tu cuenta y crea o enlaza un proyecto Vercel. Define primero su nombre en el dashboard, para conocer su URL estable. Añade cada variable para producción; el CLI pide el valor de forma interactiva:
+
+```bash
+npx vercel env add APP_BASE_URL production
+npx vercel env add DATABASE_URL production
+npx vercel env add OTP_HMAC_SECRET production
+npx vercel env add AUTH_MODE production
+npx vercel env add QR_MODE production
+npx vercel env add QR_VALIDATOR_URL production
+npx vercel env add QR_VALIDATOR_TOKEN production
+npx vercel env add DELIVERY_EMAIL_ENABLED production
+npx vercel env add MAIL_MODE production
+npx vercel env add CRON_SECRET production
+```
+
+Ingresa `pilot`, `remote` y `false` para las variables de modo indicadas. No pegues secretos como argumentos del comando, porque podrían quedar en el historial del shell. Verifica los nombres configurados y despliega al dominio estable para probar el flujo completo:
+
+```bash
+npx vercel env ls production
+npm run deploy:vercel
+```
+
+Las vistas previas permiten revisar la interfaz, pero no el flujo de escritura mientras `APP_BASE_URL` tenga el dominio estable. En los cambios siguientes, `npm run deploy:vercel:preview` crea una vista previa y `npm run deploy:vercel` publica en producción. Cloudflare conserva su flujo actual con `npm run deploy`.
+
+La base Neon ya está migrada, por lo que no ejecutes otra migración si Vercel usa la misma base. Ejecuta migraciones solo cuando agregues un nuevo archivo SQL y antes de usar ese esquema.
+
 El repositorio incluye CI de tipos, pruebas y compilación. Cloudflare y Neon requieren cuentas externas y configuración; el repositorio no crea dichas cuentas. El nivel gratuito tiene límites: medir CPU/tamaño del Worker y consumo de base antes de comprometer un evento. Si el paquete excede el límite gratuito, no contratar automáticamente: revisar tamaño o usar frontend estático más API ligera. No se garantiza servicio ilimitado gratuito.
 
 ## Comprobantes

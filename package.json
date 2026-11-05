@@ -12,6 +12,8 @@
     "build:worker": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy:vercel:preview": "npx vercel",
+    "deploy:vercel": "npx vercel --prod",
     "format": "prettier --write src tests scripts"
   },
   "keywords": [],
