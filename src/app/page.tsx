@@ -12,7 +12,7 @@ type Event = {
   email_enabled: boolean;
 };
 type User = { email: string; global_role: string };
-type Student = { code: string; name: string; email: string };
+type Student = { code: string; name: string; email: string; type: string };
 type Scan = {
   valid: boolean;
   student?: Student;
@@ -316,7 +316,7 @@ export default function Home() {
                         <span className="badge">Identidad validada</span>
                         <h3>{scan.student.name}</h3>
                         <p>
-                          {scan.student.code} · {scan.student.email}
+                          {scan.student.email} · {scan.student.type}
                         </p>
                         {scan.duplicate ? (
                           <p className="notice">
@@ -371,6 +371,7 @@ export default function Home() {
                                 code: f.code,
                                 name: f.name,
                                 email: f.email,
+                                type: f.type,
                               },
                               observation: f.observation,
                             });
@@ -397,6 +398,10 @@ export default function Home() {
                         <label>
                           Correo institucional
                           <input name="email" type="email" required />
+                        </label>
+                        <label>
+                          Tipo
+                          <input name="type" required maxLength={80} />
                         </label>
                         <label>
                           Observación obligatoria
@@ -516,6 +521,7 @@ export default function Home() {
                                     {r.student_code}
                                     <br />
                                     {r.student_email}
+                                    {r.student_type ? ` · ${r.student_type}` : ""}
                                   </td>
                                   <td>{r.responsible}</td>
                                   <td>{date(String(r.delivered_at))}</td>
